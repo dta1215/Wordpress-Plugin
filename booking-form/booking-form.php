@@ -32,9 +32,10 @@ function booking_form_assets()
 function get_place_data_db()
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'custom_data';
+    $table_name = $wpdb->prefix . 'booking_places';
 
-    $results = $wpdb->get_results("SELECT * FROM $table_name");
+    $results = $wpdb->get_results("SELECT * FROM $table_name
+                                    WHERE status = '1'");
 
     return $results;
 }
@@ -45,66 +46,62 @@ function booking_form_shortcode()
 
     $places = get_place_data_db();
 
-    // var_dump($place)
+    // var_dump($places)
 
     // Your form HTML code goes here
     ?>
-    <form id="booking_form" action="">
+    <form id="booking_form" class="container" action="">
         <!-- Form fields -->
-        <div class="container">
             <div class="row booking_form_top">
-                <div class="col-6">
-
-                </div>
-                <div class="col-6">
+                <div class="col-12 col-md-6"></div>
+                <div class="col-12 col-md-6">
                     <div class="row">
-                        <div class="col-4">
+                        <div class="col-6 col-md-4">
                             <label>Xe VIP</label>
                             <div>
-                                <input type="radio" name="booking_radio_loaixe" value="250.000"><text id="booking_radio_loaixe_VIP">250.000</text>
+                                <input id="radio_booking_radio_loaixe_VIP" type="radio" name="booking_radio_loaixe" value="250.000"><text id="booking_radio_loaixe_VIP">250.000</text>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-6 col-md-4">
                          <label>Xe Thường</label>
                             <div>
-                                <input type="radio" name="booking_radio_loaixe" value="200.000"><text id="booking_radio_loaixe_thuong">200.000</text>
+                                <input id="radio_booking_radio_loaixe_thuong" type="radio" name="booking_radio_loaixe" value="200.000"><text id="booking_radio_loaixe_thuong">200.000</text>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="row booking_form_middle">
-                <div class="col-3">
+                <div class="col-12 col-xs-3 col-md-3">
                     <select name="booking_select_noixuatphat">
                         <option value="">Chọn điểm xuất phát</option>
                         <?php if (!empty($places)): ?>
                             <?php foreach ($places as $place): ?>
-                                <option value="<?php echo esc_attr($place->origin); ?>"><?php echo esc_html($place->origin); ?>
+                                <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </select>
                 </div>
-                <div class="col-3">
+                <div class="col-12 col-xs-3 col-md-3">
                     <select name="booking_select_noiden">
                         <option value="">Chọn điểm đến</option>
                         <?php if (!empty($places)): ?>
                             <?php foreach ($places as $place): ?>
-                                <option value="<?php echo esc_attr($place->origin); ?>"><?php echo esc_html($place->origin); ?>
+                                <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </select>
                 </div>
-                <div class="col-3">
+                <div class="col-12 col-xs-3 col-md-3">
                     <input type="text" id="booking_input_thoigiankhoihanh" name="booking_input_thoigiankhoihanh"
                         placeholder="Thời gian khởi hành *">
                 </div>
-                <div class="col-2"><input id="btnBooking" class="button primary" type="button" value="Đặt vé ngay"></div>
+                <div class="col-12 col-xs-2 col-md-2 d-flex justify-content-center">
+                    <input id="btnBooking" class="button primary" type="button" value="Đặt vé ngay">
+                </div>
             </div>
-            <div class="row">
-            </div>
-        </div>
     </form>
     <?php
 
@@ -114,4 +111,36 @@ function booking_form_shortcode()
 }
 
 
+function ajax_load_bang_gia(){
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'booking_prices';
+
+    $valid = $_GET["action"] == "ajax_load_bang_gia" && $_GET["fromId"] && $_GET["toId"];
+
+    if($valid){
+        // Lấy dữ liệu từ bảng
+        $fromId = $_GET["fromId"];
+        $toId = $_GET["toId"];
+
+        $results = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT price, vipPrice FROM $table_name p 
+                WHERE (p.fromPlaceId = %d AND p.toPlaceId = %d ) AND p.status = '1'
+                LIMIT 1",
+                $fromId,
+                $toId
+            )
+        );
+
+        wp_send_json($results);
+    }
+}
+
+add_action('wp_ajax_ajax_load_bang_gia', 'ajax_load_bang_gia');
+add_action('wp_ajax_nopriv_ajax_load_bang_gia', 'ajax_load_bang_gia');
+
+
 add_shortcode('booking_form', 'booking_form_shortcode');
+
+
+

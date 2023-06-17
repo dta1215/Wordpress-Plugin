@@ -33,9 +33,9 @@ function my_custom_plugin_menu()
 add_action('admin_menu', 'my_custom_plugin_menu');
 
 
-function quan_ly_dia_diem_page() {
+function quan_ly_dia_diem_page()
+{
     include(plugin_dir_path(__FILE__) . 'templates/dia-diem.php');
-    include(plugin_dir_path(__FILE__) . 'controller/dia-diem-controller.php');
 }
 
 function my_custom_plugin_page()
@@ -52,8 +52,21 @@ function my_custom_plugin_page()
     <?php
 }
 
+function get_places(){
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'booking_places';
+    $results = $wpdb->get_results("SELECT * FROM $table_name");
+
+    return $results;
+}
+
 function display_custom_form()
 {
+
+    $places = get_places();
+
+    // var_dump($places);
+
     ?>
     <form method="post">
         <div class="container-fluid">
@@ -61,40 +74,61 @@ function display_custom_form()
                 <div class="col-md-6 py-1">
                     <div class="row">
                         <div class="col-3"><label for="origin">Nơi xuất phát:</label></div>
-                        <div class="col-9"><input type="text" name="origin" id="origin" required></div>
+                        <div class="col-6">
+                            <select name="origin" required>
+                                <option value="">Chọn điểm xuất phát</option>
+                                <?php if (!empty($places)): ?>
+                                    <?php foreach ($places as $place): ?>
+                                        <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-6 py-1">
                     <div class="row">
                         <div class="col-3"><label for="destination">Nơi đến:</label></div>
-                        <div class="col-9"><input type="text" name="destination" id="destination" required></div>
+                        <div class="col-6">
+                            <select name="destination" required>
+                                <option value="">Chọn điểm xuất phát</option>
+                                <?php if (!empty($places)): ?>
+                                    <?php foreach ($places as $place): ?>
+                                        <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 py-1">
-                    <div class="row">
+                <div class="row">
+                    <div class="col-md-6 py-1">
+                        <div class="row">
 
-                        <div class="col-3"><label for="price_departure">Giá chiều đi:</label></div>
-                        <div class="col-9">
-                            <input type="number" step="0.01" name="price_departure" id="price_departure" required>
+                            <div class="col-3"><label for="price_departure">Giá xe thường:</label></div>
+                            <div class="col-6">
+                                <input type="number" step="1" name="price_departure"
+                                    id="price_departure" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 py-1">
+                        <div class="row">
+                            <div class="col-3"> <label for="price_return">Giá xe VIP:</label></div>
+                            <div class="col-6"> <input type="number" step="1" name="price_return"
+                                    id="price_return" required>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6 py-1">
-                    <div class="row">
-                        <div class="col-3"> <label for="price_return">Giá chiều về:</label></div>
-                        <div class="col-9"> <input type="number" step="0.01" name="price_return" id="price_return" required>
-                        </div>
+                <div class="row">
+                    <div class="col-md-12 py-1">
+                        <input type="submit" class="btn btn-primary" name="submit" value="Thêm dữ liệu">
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-12 py-1">
-                    <input type="submit" class="btn btn-primary" name="submit" value="Thêm dữ liệu">
-                </div>
-            </div>
-        </div>
 
     </form>
     <?php
@@ -103,24 +137,23 @@ function display_custom_form()
 function process_custom_form()
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'custom_data';
+    $table_name = $wpdb->prefix . 'booking_prices';
 
     if (isset($_POST['submit'])) {
         $origin = sanitize_text_field($_POST['origin']);
         $destination = sanitize_text_field($_POST['destination']);
-        $price_departure = floatval($_POST['price_departure']);
-        $price_return = floatval($_POST['price_return']);
+        $price_departure = ($_POST['price_departure']);
+        $price_return = ($_POST['price_return']);
 
         // Thêm dữ liệu vào bảng
         $wpdb->insert(
             $table_name,
             array(
-                'origin' => $origin,
-                'destination' => $destination,
-                'price_departure' => $price_departure,
-                'price_return' => $price_return,
-            ),
-            array('%s', '%s', '%f', '%f')
+                'fromPlaceId' => $origin,
+                'toPlaceId' => $destination,
+                'price' => $price_departure,
+                'vipPrice' => $price_return,
+            )
         );
     }
 }
@@ -129,23 +162,46 @@ add_action('admin_init', 'process_custom_form');
 function display_custom_table()
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'custom_data';
+    $booking_prices = $wpdb->prefix . 'booking_prices';
+    $booking_places = $wpdb->prefix . 'booking_places';
 
     // Lấy dữ liệu từ bảng
-    $results = $wpdb->get_results("SELECT * FROM $table_name");
+    $results = $wpdb->get_results("SELECT 
+                                price.id, 
+                                p1.name as 'fromPlaceName', 
+                                p2.name as 'toPlaceName', 
+                                price.price, price.vipPrice,
+                                status
+                            FROM wp_booking_prices price
+                            JOIN wp_booking_places p1 on price.fromPlaceId = p1.id
+                            JOIN wp_booking_places p2 on price.toPlaceId = p2.id;");
+
+    // var_dump($results);
 
     // Hiển thị bảng
     if ($results) {
         echo '<table class="wp-list-table widefat table table-striped table-responsive">';
-        echo '<thead><tr><th>Nơi xuất phát</th><th>Nơi đến</th><th>Giá chiều đi</th><th>Giá chiều về</th><th></th></tr></thead>';
+        echo '<thead>
+            <tr>
+                <th>id</th>
+                <th>Nơi xuất phát</th>
+                <th>Nơi đến</th>
+                <th>Giá vé thường</th>
+                <th>Giá vé VIP</th>
+                <th>Trạng thái</th>
+                <th></th>
+            </tr>
+        </thead>';
         echo '<tbody>';
         foreach ($results as $row) {
             echo '<tr>';
-            echo '<td>' . esc_html($row->origin) . '</td>';
-            echo '<td>' . esc_html($row->destination) . '</td>';
-            echo '<td>' . esc_html($row->price_departure) . '</td>';
-            echo '<td>' . esc_html($row->price_return) . '</td>';
-            echo '<td><button class="delete-button btn btn-danger" data-id="' . $row->id . '">Xóa</button></td>';
+            echo '<td>' . esc_html($row->id) . '</td>';
+            echo '<td>' . esc_html($row->fromPlaceName) . '</td>';
+            echo '<td>' . esc_html($row->toPlaceName) . '</td>';
+            echo '<td>' . esc_html($row->price) . '</td>';
+            echo '<td>' . esc_html($row->vipPrice) . '</td>';
+            echo '<td>' . esc_html($row->status == 1 ? "Mở" : "Đóng") . '</td>';
+            echo '<td><button class="delete-button btn btn-danger delete-price" data-id="' . $row->id . '">Xóa</button></td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
@@ -159,7 +215,7 @@ function display_custom_table()
 function delete_custom_data()
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'custom_data';
+    $table_name = $wpdb->prefix . 'booking_prices';
     $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
 
     if ($id > 0) {
@@ -178,7 +234,7 @@ add_action('wp_ajax_nopriv_delete_custom_data', 'delete_custom_data');
 function my_custom_plugin_install()
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'custom_data';
+    $table_name = $wpdb->prefix . 'booking_prices';
 
     $places_table = $wpdb->prefix . 'booking_places';
 
@@ -191,15 +247,6 @@ function my_custom_plugin_install()
         price_departure DECIMAL(10,2) NOT NULL,
         price_return DECIMAL(10,2) NOT NULL,
         PRIMARY KEY (id)
-    ) $charset_collate;";
-
-
-    $sql += " CREATE TABLE $places_table (
-       id INT(11) NOT NULL AUTO_INCREMENT,
-       name varchar(100) NOT NULL,
-       order INT(10) NOT NULL,
-       status boolean NOT NULL default 0,
-       PRIMARY KEY (id)
     ) $charset_collate;";
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');

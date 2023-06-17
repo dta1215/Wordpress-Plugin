@@ -10,6 +10,8 @@ $(function(){
 
 
 BookingFormHandler = (function(){
+    const UltimateForm_ID = 1534;
+
     let root = {
         $form: null
     }
@@ -18,6 +20,10 @@ BookingFormHandler = (function(){
         root.$form = $("#booking_form");
         root.$TopArea = root.$form.find(".booking_form_top")
         root.$btnSubmitForm = root.$form.find("#btnBooking")
+
+        root.$formSelect = root.$form.find("[name='booking_select_noixuatphat']");
+        root.$toSelect = root.$form.find("[name='booking_select_noiden']");
+        root.$datePicker = root.$form.find("[name='booking_input_thoigiankhoihanh']");
     }
     
     function InitValidation(){
@@ -70,75 +76,122 @@ BookingFormHandler = (function(){
             UpdateMatchingPlaces(e);
         })
 
-        // Nếu nơi xuất phát là HN thì nơi đi HN sẽ phải ẩn đi vì cùng một nơi
-        function UpdateMatchingPlaces(e){
-            let changedElement = $(e.target);
-            let currentValue = changedElement.val();
-
-            if(changedElement.is('[name="booking_select_noixuatphat"]'))
-            {
-                let noidenSelect = root.$form.find(`[name="booking_select_noiden"]`)
-                noidenSelect.val('');
-                noidenSelect.find(`option`).removeAttr("hidden");
-
-                console.log(noidenSelect.find(`option[value="${currentValue}"]`));
-                noidenSelect.find(`option[value="${currentValue}"]`).attr("hidden", "true")
-            }
-        }
-
-        function ToggleLoaiXe(){
-            let isValid_NoiO_NoiDen = $('select[name="booking_select_noixuatphat"]').valid() && $('select[name="booking_select_noiden"]').valid()
-
-            if(isValid_NoiO_NoiDen) {
-                root.$TopArea.show();
-            }else{
-                root.$TopArea.hide();
-            }
-        }
-
         root.$btnSubmitForm.click((e)=>{
             let isValidForm = root.$form.valid();
 
             if(!isValidForm) return false;
 
             // When Valid form
-            PUM.open(1534);
+            PUM.open(UltimateForm_ID);
 
-            let noiXuatPhatValue = root.$form.find('[name="booking_select_noixuatphat"]').val();
-			let noiDenValue = root.$form.find('[name="booking_select_noiden"]').val();
-			let loaiXe = root.$form.find("[name='booking_radio_loaixe']:checked").val();
+            let noiXuatPhatValue = root.$form.find('[name="booking_select_noixuatphat"]').find("option:selected").html();
+			let noiDenValue = root.$form.find('[name="booking_select_noiden"]').find("option:selected").html();
 			let ngayXuatPhat = root.$form.find('[name="booking_input_thoigiankhoihanh"]').val();
 			let gioXuatPhat = root.$form.find('[name="booking_input_thoigiankhoihanh"]').val();
+            
+            loaiXe = "";
+            let giaTien = root.$form.find("[name='booking_radio_loaixe']:checked").val();
+            if(root.$form.find('[name="booking_radio_loaixe"]:checked').is("#radio_booking_radio_loaixe_VIP")){
+                loaiXe = "VIP";
+            }else if (root.$form.find('[name="booking_radio_loaixe"]:checked').is("#radio_booking_radio_loaixe_thuong")){
+                loaiXe = "Thường";
+            }
 
             let resultObj = {
 				noiXuatPhatValue: noiXuatPhatValue,
 				noiDenValue: noiDenValue,
-				giaXe: loaiXe,
+                loaiXe: loaiXe,
+				giaTien: giaTien,
 				ngayXuatPhat: ngayXuatPhat,
 				gioXuatPhat: gioXuatPhat
 			}
 
 			FillUltimateForm(resultObj);
         })
+
+        // Event dat ve thanh cong, ban tin qua Tele
+        $(".ultimate_booking_form").closest("form").on("wpcf7mailsent", (e)=>{
+            let target = $(e.target);
+            $(target).trigger("reset");
+
+            root.$formSelect.val("").trigger("change");
+            root.$toSelect.val("").trigger("change");
+            root.$datePicker.val("");
+
+            PUM.close(UltimateForm_ID);
+        })
+    }
+
+    // Nếu nơi xuất phát là HN thì nơi đi HN sẽ phải ẩn đi vì cùng một nơi
+    function UpdateMatchingPlaces(e){
+        let changedElement = $(e.target);
+        let currentValue = changedElement.val();
+
+        if(changedElement.is('[name="booking_select_noixuatphat"]'))
+        {
+            let noidenSelect = root.$form.find(`[name="booking_select_noiden"]`)
+            noidenSelect.val('');
+            noidenSelect.find(`option`).removeAttr("hidden");
+
+            noidenSelect.find(`option[value="${currentValue}"]`).attr("hidden", "true")
+        }
+    }
+
+    function ToggleLoaiXe(){
+        let isValid_NoiO_NoiDen = $('select[name="booking_select_noixuatphat"]').valid() && $('select[name="booking_select_noiden"]').valid()
+
+        if(isValid_NoiO_NoiDen) {
+            let fromId = $(`select[name="booking_select_noixuatphat"]`).val();
+            let toId = $(`select[name="booking_select_noiden"]`).val();
+
+            // Fill bang gia tuong ung 
+            GetBangGia(fromId, toId).then((res)=>{
+                if(!res){
+                    root.$TopArea.find(`[type="radio"]:selected`).attr("selected", "");
+                    root.$TopArea.hide();
+                }
+                
+                if(res){
+                    root.$TopArea.show();
+
+                    root.$TopArea.find(`#booking_radio_loaixe_VIP`).text(IntToVND(res.vipPrice));
+                    root.$TopArea.find(`#radio_booking_radio_loaixe_VIP`).val(res.vipPrice);
+
+                    root.$TopArea.find(`#booking_radio_loaixe_thuong`).text(IntToVND(res.price));
+                    root.$TopArea.find(`#radio_booking_radio_loaixe_thuong`).val(res.price);
+                }
+            })
+        }else{
+            root.$TopArea.hide();
+        }
     }
 
     function FillUltimateForm(parentObj){
-        console.log(parentObj);
-
         let ultimateBookingForm = $(".ultimate_booking_form").closest("form");
-        
-        let getXeType = parseInt(parentObj.giaXe) == 250 ? "VIP" : "Thường";
         
         $(".ultimate_booking_form_from").text(parentObj.noiXuatPhatValue);
         $(".ultimate_booking_form_to").text(parentObj.noiDenValue);
         $(".ultimate_booking_form_time").text(parentObj.gioXuatPhat);
-        $(".ultimate_booking_form_price").text(`${getXeType} ` + parentObj.giaXe);
+        $(".ultimate_booking_form_price").text(`${parentObj.loaiXe} ` + IntToVND(parentObj.giaTien));
         
         /* Fill vao o input an */
         $("#ultimate_booking_form_from").val(parentObj.noiXuatPhatValue);
         $("#ultimate_booking_form_to").val(parentObj.noiDenValue);
         $("#ultimate_booking_form_time").val(parentObj.gioXuatPhat);
-        $("#ultimate_booking_form_price").val(`${getXeType} - ${parentObj.giaXe}`);
+        $("#ultimate_booking_form_price").val(`${parentObj.loaiXe} - ${IntToVND(parentObj.giaTien)}`);
+    }
+
+    function GetBangGia(xuatPhatId, noiDenId){
+        return new Promise((resolve, reject)=>{
+            var data = {
+                'action': 'ajax_load_bang_gia',
+                'fromId': xuatPhatId,
+                'toId': noiDenId
+            };
+            $.get(ajaxurl, data, function(res) {
+                resolve(res);
+            });
+        })
     }
 
     function PreLoad(){
@@ -185,4 +238,9 @@ function InitDateTimePicker(){
         format:'H:i, d/m/Y',
         formatDate:'d/m/Y'
     });
+}
+
+
+function IntToVND(num){
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
 }

@@ -12,3 +12,34 @@ label.error {
     padding-right: unset !important; 
     padding-left: unset !important;
 }
+
+
+.pum-theme-783 .pum-content + .pum-close, .pum-theme-lightbox .pum-content + .pum-close {
+    right: -13px;
+    top: 10px !important;
+    box-shadow: unset !important;
+    text-shadow: unset !important;
+}
+
+#btnDatVeNgay {
+    background: linear-gradient(1deg, #ffd91f, #ffffff) !important;
+    color: #2a2a2a !important;
+    box-shadow: none !important;
+}
+
+#btnDatVeNgay:hover, #btnDatVeNgay:active, #btnDatVeNgay:focus{
+    background: linear-gradient(1deg, #eeae25, #ffffff) !important;
+    color: #161616 !important;
+    box-shadow: 0 2px 4px 0px #0c0c0c33 !important;
+}
+
+@media only screen and (max-width: 900px) {
+    #booking_form {
+        padding: 0 30px 0 10px;
+    }
+
+    label.error {
+        position: relative;
+    }
+}
+
