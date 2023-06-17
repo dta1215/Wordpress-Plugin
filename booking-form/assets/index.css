@@ -1,0 +1,14 @@
+label.error {
+    color: #f74108;
+    font-weight: 100;
+    position: absolute;
+}
+
+.ultimate_booking_form .row .col-6 {
+    padding: 0;
+}
+
+.row>*{
+    padding-right: unset !important; 
+    padding-left: unset !important;
+}
