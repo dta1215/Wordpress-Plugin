@@ -1,3 +1,4 @@
+
 <div class="wrap">
 
     <?php save_places(); ?>
@@ -7,7 +8,6 @@
         <?php danh_sach_dia_diem(); ?>
     </div>
 </div>
-
 
 <?php
 // Lưu địa điểm
@@ -63,30 +63,28 @@ function save_places()
 }
 
 
-
-
 function danh_sach_dia_diem()
 {
     global $wpdb;
     $table_name = $wpdb->prefix . 'booking_places';
 
     // Lấy dữ liệu từ bảng
-    $results = $wpdb->get_results("SELECT * FROM $table_name WHERE status = '1'");
+    $results = $wpdb->get_results("SELECT * FROM $table_name");
 
 
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-    
+
     if (isset($_GET['action']) && $_GET['action'] === 'custom_delete_place') {
         if ($id > 0) {
             $result = $wpdb->delete($table_name, array('id' => $id), array('%d'));
             if ($result !== false) {
                 wp_redirect(admin_url('admin.php?page=my-custom-dia-diem'));
                 exit;
-            } 
+            }
         }
         wp_die('Xóa không thành công.');
     }
-    
+
     // Hiển thị bảng
     if ($results) {
         echo '<table class="wp-list-table widefat table table-striped table-responsive">';
@@ -101,13 +99,11 @@ function danh_sach_dia_diem()
             </thead>';
         echo '<tbody>';
         foreach ($results as $row) {
-            echo '<tr>';
+            echo '<tr id=' . $row->id . '>';
             echo '<td>' . esc_html($row->id) . '</td>';
             echo '<td>' . esc_html($row->name) . '</td>';
             echo '<td>' . esc_html($row->place_order) . '</td>';
-            $status = $row->status;
-            $display_status = ($status == 1) ? 'Bật' : 'Tắt';
-            echo '<td>' . esc_html($display_status) . '</td>';
+            echo '<td><input class="render_data_status" type="checkbox" name="status" value="' . esc_attr($row->status) . '"' . checked($row->status, 1, false) . '></td>';
             echo '<td><a href="' . admin_url("admin.php?page=my-custom-dia-diem&action=custom_delete_place&id=" . $row->id) . '" />Xóa</a></td>';
             echo '</tr>';
         }
@@ -115,17 +111,5 @@ function danh_sach_dia_diem()
     } else {
         echo 'Không có dữ liệu.';
     }
-
-
-    
 }
-
-
-function custom_delete_place()
-{
-    
-}
-
-add_action('admin_init', 'custom_delete_place');
-
 

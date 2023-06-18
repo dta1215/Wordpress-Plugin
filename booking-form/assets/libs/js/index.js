@@ -21,7 +21,7 @@ BookingFormHandler = (function(){
         root.$TopArea = root.$form.find(".booking_form_top")
         root.$btnSubmitForm = root.$form.find("#btnBooking")
 
-        root.$formSelect = root.$form.find("[name='booking_select_noixuatphat']");
+        root.$fromSelect = root.$form.find("[name='booking_select_noixuatphat']");
         root.$toSelect = root.$form.find("[name='booking_select_noiden']");
         root.$datePicker = root.$form.find("[name='booking_input_thoigiankhoihanh']");
     }
@@ -76,6 +76,30 @@ BookingFormHandler = (function(){
             UpdateMatchingPlaces(e);
         })
 
+
+        // Update to Place base on From PLace selected
+        root.$fromSelect.change((e)=>{
+            let target = e.target;
+            let selectedFromId = $(target).val();
+
+            $.get(ajaxurl + `?action=get_to_place&fromId=${selectedFromId}`, (res) => {
+                if(res) {
+                    let result = res.map((item, i) => {
+                        if(i == 0){
+                            return `
+                                <option value="">Chọn điểm đến</option>
+                                <option value="${item.id}">${item.name}</option>
+                            `
+                        }else{
+                            return `<option value="${item.id}">${item.name}</option>`
+                        }
+                    }).join("");
+
+                    root.$toSelect.html(result);
+                }
+            })
+        })  
+
         root.$btnSubmitForm.click((e)=>{
             let isValidForm = root.$form.valid();
 
@@ -114,7 +138,7 @@ BookingFormHandler = (function(){
             let target = $(e.target);
             $(target).trigger("reset");
 
-            root.$formSelect.val("").trigger("change");
+            root.$fromSelect.val("").trigger("change");
             root.$toSelect.val("").trigger("change");
             root.$datePicker.val("");
 

@@ -86,12 +86,6 @@ function booking_form_shortcode()
                 <div class="col-12 col-xs-3 col-md-3">
                     <select name="booking_select_noiden">
                         <option value="">Chọn điểm đến</option>
-                        <?php if (!empty($places)): ?>
-                            <?php foreach ($places as $place): ?>
-                                <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
                     </select>
                 </div>
                 <div class="col-12 col-xs-3 col-md-3">
@@ -104,8 +98,6 @@ function booking_form_shortcode()
             </div>
     </form>
     <?php
-
-
 
     return ob_get_clean(); // Return the buffered content
 }
@@ -139,6 +131,29 @@ function ajax_load_bang_gia(){
 add_action('wp_ajax_ajax_load_bang_gia', 'ajax_load_bang_gia');
 add_action('wp_ajax_nopriv_ajax_load_bang_gia', 'ajax_load_bang_gia');
 
+
+
+function get_to_place(){
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'booking_prices';
+
+    $fromId = $_GET["fromId"];
+
+    $results = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT place2.id, place2.name FROM wp_booking_places place
+            join wp_booking_prices price ON place.id = price.fromPlaceId
+            join wp_booking_places place2 ON price.toPlaceId = place2.id
+            WHERE place.id = %d AND price.status = '1' ",
+            $fromId
+        )
+    );
+
+    wp_send_json($results);
+}
+
+add_action('wp_ajax_get_to_place', 'get_to_place');
+add_action('wp_ajax_nopriv_get_to_place', 'get_to_place');
 
 add_shortcode('booking_form', 'booking_form_shortcode');
 

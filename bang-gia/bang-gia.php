@@ -3,6 +3,7 @@
     Plugin Name: Bảng giá tuyến xe
 */
 
+
 // Add JS  & CSS files
 function enqueue_custom_admin_JS_CSS()
 {
@@ -13,46 +14,37 @@ function enqueue_custom_admin_JS_CSS()
 }
 add_action('admin_enqueue_scripts', 'enqueue_custom_admin_JS_CSS');
 
-
 // Init WP Admin Menu
-function my_custom_plugin_menu()
+add_action('admin_menu', 'booking_plugin_menu');
+function booking_plugin_menu()
 {
-    add_menu_page(
-        'Quản lý tuyến xe',
-        'Quản lý tuyến xe',
-        'manage_options',
-        'my-custom-plugin',
-        'my_custom_plugin_page',
-        'dashicons-admin-generic',
-        99
-    );
+    add_menu_page('Quản lý giá xe', 'Quản lý giá xe', 'manage_options', 'booking-menu', 'booking_menu_page', 'dashicons-admin-generic', 99);
 
-    add_submenu_page("my-custom-plugin", "Quản lý địa điểm", "Quản lý địa điểm", "manage_options", "my-custom-dia-diem", "quan_ly_dia_diem_page", 'dashicons-admin-generic');
-
+    add_submenu_page("booking-menu", "Quản lý địa điểm", "Quản lý địa điểm", "manage_options", "my-custom-dia-diem", "quan_ly_dia_diem_page", 'dashicons-admin-generic');
 }
-add_action('admin_menu', 'my_custom_plugin_menu');
 
 
 function quan_ly_dia_diem_page()
 {
-    include(plugin_dir_path(__FILE__) . 'templates/dia-diem.php');
+    // include(plugin_dir_path(__FILE__) . 'templates/dia-diem.php');
+    include 'templates/dia-diem.php';
 }
 
-function my_custom_plugin_page()
+function booking_menu_page()
 {
     // Hiển thị biểu mẫu thêm dữ liệu
     display_custom_form();
-
     ?>
     <div class="wrap">
-        <h1>Bảng tuyến xe</h1>
+        <h1>Bảng giá xe</h1>
         <!-- Hiển thị bảng dữ liệu -->
         <?php display_custom_table(); ?>
     </div>
     <?php
 }
 
-function get_places(){
+function get_places()
+{
     global $wpdb;
     $table_name = $wpdb->prefix . 'booking_places';
     $results = $wpdb->get_results("SELECT * FROM $table_name");
@@ -69,67 +61,51 @@ function display_custom_form()
 
     ?>
     <form method="post">
-        <div class="container-fluid">
+        <div class="">
             <div class="row">
-                <div class="col-md-6 py-1">
-                    <div class="row">
-                        <div class="col-3"><label for="origin">Nơi xuất phát:</label></div>
-                        <div class="col-6">
-                            <select name="origin" required>
-                                <option value="">Chọn điểm xuất phát</option>
-                                <?php if (!empty($places)): ?>
-                                    <?php foreach ($places as $place): ?>
-                                        <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="origin">Nơi xuất phát:</label>
+                        <select name="origin" class="form-control" required>
+                            <option value="">Chọn điểm xuất phát</option>
+                            <?php if (!empty($places)): ?>
+                                <?php foreach ($places as $place): ?>
+                                    <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
                     </div>
-                </div>
-                <div class="col-md-6 py-1">
-                    <div class="row">
-                        <div class="col-3"><label for="destination">Nơi đến:</label></div>
-                        <div class="col-6">
-                            <select name="destination" required>
-                                <option value="">Chọn điểm xuất phát</option>
-                                <?php if (!empty($places)): ?>
-                                    <?php foreach ($places as $place): ?>
-                                        <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label for="destination">Nơi đến:</label>
+                        <select name="destination" class="form-control" required>
+                            <option value="">Chọn điểm xuất phát</option>
+                            <?php if (!empty($places)): ?>
+                                <?php foreach ($places as $place): ?>
+                                    <option value="<?php echo esc_attr($place->id); ?>"><?php echo esc_html($place->name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 py-1">
-                        <div class="row">
-
-                            <div class="col-3"><label for="price_departure">Giá xe thường:</label></div>
-                            <div class="col-6">
-                                <input type="number" step="1" name="price_departure"
-                                    id="price_departure" required>
-                            </div>
-                        </div>
+                    <div class="form-group">
+                        <label for="price_departure" class="label-control">Giá xe thường:</label>
+                        <input type="number" class="form-control" step="1" name="price_departure" id="price_departure"
+                            required>
                     </div>
-                    <div class="col-md-6 py-1">
-                        <div class="row">
-                            <div class="col-3"> <label for="price_return">Giá xe VIP:</label></div>
-                            <div class="col-6"> <input type="number" step="1" name="price_return"
-                                    id="price_return" required>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12 py-1">
-                        <input type="submit" class="btn btn-primary" name="submit" value="Thêm dữ liệu">
+                    <div class="form-group">
+                        <label for="price_return" class="label-control">Giá xe VIP:</label>
+                        <input type="number" class="form-control" step="1" name="price_return" id="price_return" required>
                     </div>
                 </div>
             </div>
-
+            <hr>
+            <div class="row">
+                <div class="col-md-12 py-1">
+                    <input type="submit" class="btn btn-primary" name="submit" value="Thêm dữ liệu">
+                </div>
+            </div>
+        </div>
     </form>
     <?php
 }
@@ -170,11 +146,13 @@ function display_custom_table()
                                 price.id, 
                                 p1.name as 'fromPlaceName', 
                                 p2.name as 'toPlaceName', 
-                                price.price, price.vipPrice,
-                                status
-                            FROM wp_booking_prices price
-                            JOIN wp_booking_places p1 on price.fromPlaceId = p1.id
-                            JOIN wp_booking_places p2 on price.toPlaceId = p2.id;");
+                                price.price, 
+                                price.vipPrice,
+                                price.status
+                            FROM {$booking_prices} price
+                            JOIN $booking_places p1 on price.fromPlaceId = p1.id
+                            JOIN $booking_places p2 on price.toPlaceId = p2.id;
+                        ");
 
     // var_dump($results);
 
@@ -194,13 +172,13 @@ function display_custom_table()
         </thead>';
         echo '<tbody>';
         foreach ($results as $row) {
-            echo '<tr>';
+            echo '<tr id=' . $row->id . '>';
             echo '<td>' . esc_html($row->id) . '</td>';
             echo '<td>' . esc_html($row->fromPlaceName) . '</td>';
             echo '<td>' . esc_html($row->toPlaceName) . '</td>';
-            echo '<td>' . esc_html($row->price) . '</td>';
-            echo '<td>' . esc_html($row->vipPrice) . '</td>';
-            echo '<td>' . esc_html($row->status == 1 ? "Mở" : "Đóng") . '</td>';
+            echo '<td>' . esc_html(NumberToVND($row->price)) . '</td>';
+            echo '<td>' . esc_html(NumberToVND($row->vipPrice)) . '</td>';
+            echo '<td><input class="price_status" type="checkbox" name="status" value="' . esc_attr($row->status) . '"' . checked($row->status, 1, false) . '></td>';
             echo '<td><button class="delete-button btn btn-danger delete-price" data-id="' . $row->id . '">Xóa</button></td>';
             echo '</tr>';
         }
@@ -231,6 +209,55 @@ function delete_custom_data()
 add_action('wp_ajax_delete_custom_data', 'delete_custom_data');
 add_action('wp_ajax_nopriv_delete_custom_data', 'delete_custom_data');
 
+// Change place status
+function change_status_handler()
+{
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'booking_places';
+
+    $recordId = $_POST['recordId'];
+    $status = $_POST['status'];
+
+    $dbStatus = $wpdb->update(
+        $table_name,
+        array('status' => $status),
+        array('id' => $recordId)
+    );
+
+    if ($dbStatus !== false) {
+        wp_send_json('Cập nhật trạng thái thành công');
+    }
+    // wp_send_json($_POST);
+}
+// Hàm callback để xử lý yêu cầu AJAX
+add_action('wp_ajax_change_status_handler', 'change_status_handler');
+add_action('wp_ajax_nopriv_change_status_handler', 'change_status_handler'); // Sử dụng cho người dùng không đăng nhập
+
+
+// Change Price status
+function change_price_handler()
+{
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'booking_prices';
+
+    $recordId = $_POST['recordId'];
+    $status = $_POST['status'];
+
+    $dbStatus = $wpdb->update(
+        $table_name,
+        array('status' => $status),
+        array('id' => $recordId)
+    );
+
+    if ($dbStatus !== false) {
+        wp_send_json('Cập nhật trạng thái thành công');
+    }
+    // wp_send_json($_POST);
+}
+// Hàm callback để xử lý yêu cầu AJAX
+add_action('wp_ajax_change_price_handler', 'change_price_handler');
+add_action('wp_ajax_nopriv_change_price_handler', 'change_price_handler'); // Sử dụng cho người dùng không đăng nhập
+
 function my_custom_plugin_install()
 {
     global $wpdb;
@@ -254,3 +281,11 @@ function my_custom_plugin_install()
 }
 
 register_activation_hook(__FILE__, 'my_custom_plugin_install');
+
+
+
+
+
+function NumberToVND($price){
+    return number_format($price, 0, '', ',');
+}
